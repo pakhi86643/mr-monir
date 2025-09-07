@@ -1,204 +1,105 @@
-const axios = require("axios");
-const simsim = "https://simsimi.cyberbot.top";
-
 module.exports.config = {
- name: "baby",
- version: "1.0.3",
+ name: "bday",
+ version: "1.0.0",
  hasPermssion: 0,
- credits: "ULLASH",
- description: "Cute AI Baby Chatbot | Talk, Teach & Chat with Emotion ☢️",
- commandCategory: "simsim",
- usages: "[message/query]",
- cooldowns: 0,
- prefix: false
+ credits: "ULLASH and SAHU ",
+ description: "See admin's birthday",
+ usePrefix: false,
+ commandCategory: "bday",
+ cooldowns: 5
 };
 
-module.exports.run = async function ({ api, event, args, Users }) {
+module.exports.run = async ({ api, event }) => {
+ const axios = global.nodemodule["axios"];
+ const fs = global.nodemodule["fs-extra"];
+ const path = __dirname + "/cache/1.png";
+
+ const targetDate = new Date("December 16, 2025 00:00:00");
+ const now = new Date();
+
+ const diffMs = targetDate - now;
+ const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+ const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+ const diffMinutes = Math.floor((diffMs / (1000 * 60)) % 60);
+ const diffSeconds = Math.floor((diffMs / 1000) % 60);
+
+ if (diffDays === 1) {
+ const tomorrowMessage =
+`👉Admin SHAHADAT SAHU এর জন্মদিন আগামীকাল!\n অবশেষে এডমিনের জন্মদিন ফাঁস হয়ে গেল!\n\n উইশ করতে ভুলবে না কিন্তু...🥰😘
+`;
+ return api.sendMessage(tomorrowMessage, event.threadID, event.messageID);
+ }
+
+ if (diffDays === 0) {
+ const happyBirthdayMessage = 
+`╔═══ 🎉 𝐇𝐀𝐏𝐏𝐘 𝐁𝐈𝐑𝐓𝐇𝐃𝐀𝐘 🎉 ════╗
+║ 𝐎𝐔𝐑 𝐁𝐎𝐒𝐒 - 𝐒𝐇𝐀𝐇𝐀𝐃𝐀𝐓 𝐒𝐀𝐇𝐔 💖 
+╟─────────────────
+║ 🎂 Everyone Please Wish Him Today! 
+║ 🥳 আজ আমাদের Boss এর জন্মদিন! 
+║ ❤️ মন থেকে উইশ করো সবাই! 
+╟─────────────────
+║ 📩 Connect With Him: 
+║ ➤ 📘 Facebook : 
+║ www.facebook.com/61575698041722 
+║ ➤ 💬 Messenger : 
+║ m.me/61575698041722 
+║ ➤ 📱 WhatsApp : 
+║ https://wa.me/+8801882333052 
+╟─────────────────
+║ 🫶 উইশ করো, দোয়া করো?
+║ এবং ভালোবাসা জানাও প্রিয় বস সাহুকে! ❤️‍🩹 
+╚═════════════════════════╝`;
+ return api.sendMessage(happyBirthdayMessage, event.threadID, event.messageID);
+ }
+
+ if (diffDays < 0) {
+ const leakMessage =
+`╔═══════════════════╗
+║ 🎂 Admin SHAHADAT SAHU
+║ এর জন্মদিন ফাঁস হয়ে গেছে ❤️‍🩹🤌
+╚═══════════════════╝`;
+ return api.sendMessage(leakMessage, event.threadID, event.messageID);
+ }
+
+ const countdownMessage = 
+`╔═══════════════════╗
+║ 🎂 Admin SHAHADAT SAHU
+║ এর জন্মদিন ফাঁস হয়ে গেছে ❤️‍🩹🤌
+║═══════════════════
+║ 📅 Days : ${diffDays}
+║ ⏰ Hours : ${diffHours}
+║ 🕰️ Minutes : ${diffMinutes}
+║ ⏳ Seconds : ${diffSeconds}
+╚════════════════════╝`;
+
+ const url = `https://graph.facebook.com/61575698041722/picture?height=720&width=720`;
+
  try {
- const uid = event.senderID;
- const senderName = await Users.getNameUser(uid);
- const query = args.join(" ").toLowerCase();
-
- if (!query) {
- const ran = ["Bolo baby", "hum"];
- const r = ran[Math.floor(Math.random() * ran.length)];
- return api.sendMessage(r, event.threadID, (err, info) => {
- if (!err) {
- global.client.handleReply.push({
- name: module.exports.config.name,
- messageID: info.messageID,
- author: event.senderID,
- type: "simsimi"
+ const response = await axios({
+ url,
+ method: "GET",
+ responseType: "stream",
  });
- }
- });
- }
 
- if (["remove", "rm"].includes(args[0])) {
- const parts = query.replace(/^(remove|rm)\s*/, "").split(" - ");
- if (parts.length < 2)
- return api.sendMessage(" | Use: remove [Question] - [Reply]", event.threadID, event.messageID);
+ const writer = fs.createWriteStream(path);
+ response.data.pipe(writer);
 
- const [ask, ans] = parts;
- const res = await axios.get(`${simsim}/delete?ask=${encodeURIComponent(ask)}&ans=${encodeURIComponent(ans)}`);
- return api.sendMessage(res.data.message, event.threadID, event.messageID);
- }
-
- if (args[0] === "list") {
- const res = await axios.get(`${simsim}/list`);
- if (res.data.code === 200) {
- return api.sendMessage(
- `♾ Total Questions Learned: ${res.data.totalQuestions}\n★ Total Replies Stored: ${res.data.totalReplies}\n☠︎︎ Developer: ${res.data.author}`,
+ writer.on("finish", () => {
+ api.sendMessage(
+ {
+ body: countdownMessage,
+ attachment: fs.createReadStream(path),
+ },
  event.threadID,
- event.messageID
+ () => fs.unlinkSync(path)
  );
- } else {
- return api.sendMessage(`Error: ${res.data.message || "Failed to fetch list"}`, event.threadID, event.messageID);
- }
- }
-
- if (args[0] === "edit") {
- const parts = query.replace("edit ", "").split(" - ");
- if (parts.length < 3)
- return api.sendMessage(" | Use: edit [Question] - [OldReply] - [NewReply]", event.threadID, event.messageID);
-
- const [ask, oldReply, newReply] = parts;
- const res = await axios.get(`${simsim}/edit?ask=${encodeURIComponent(ask)}&old=${encodeURIComponent(oldReply)}&new=${encodeURIComponent(newReply)}`);
- return api.sendMessage(res.data.message, event.threadID, event.messageID);
- }
-
- if (args[0] === "teach") {
- const parts = query.replace("teach ", "").split(" - ");
- if (parts.length < 2)
- return api.sendMessage(" | Use: teach [Question] - [Reply]", event.threadID, event.messageID);
-
- const [ask, ans] = parts;
- const res = await axios.get(`${simsim}/teach?ask=${encodeURIComponent(ask)}&ans=${encodeURIComponent(ans)}&senderID=${uid}&senderName=${encodeURIComponent(senderName)}`);
- return api.sendMessage(`${res.data.message || "Reply added successfully!"}`, event.threadID, event.messageID);
- }
-
- const res = await axios.get(`${simsim}/simsimi?text=${encodeURIComponent(query)}&senderName=${encodeURIComponent(senderName)}`);
- const responses = Array.isArray(res.data.response) ? res.data.response : [res.data.response];
-
- for (const reply of responses) {
- await new Promise((resolve) => {
- api.sendMessage(reply, event.threadID, (err, info) => {
- if (!err) {
- global.client.handleReply.push({
- name: module.exports.config.name,
- messageID: info.messageID,
- author: event.senderID,
- type: "simsimi"
  });
- }
- resolve();
- }, event.messageID);
+
+ writer.on("error", () => {
+ api.sendMessage("❌ Image download failed.", event.threadID, event.messageID);
  });
- }
- } catch (err) {
- console.error(err);
- return api.sendMessage(`| Error in baby command: ${err.message}`, event.threadID, event.messageID);
- }
-};
-
-module.exports.handleReply = async function ({ api, event, Users, handleReply }) {
- try {
- const senderName = await Users.getNameUser(event.senderID);
- const replyText = event.body ? event.body.toLowerCase() : "";
- if (!replyText) return;
-
- const res = await axios.get(`${simsim}/simsimi?text=${encodeURIComponent(replyText)}&senderName=${encodeURIComponent(senderName)}`);
- const responses = Array.isArray(res.data.response) ? res.data.response : [res.data.response];
-
- for (const reply of responses) {
- await new Promise((resolve) => {
- api.sendMessage(reply, event.threadID, (err, info) => {
- if (!err) {
- global.client.handleReply.push({
- name: module.exports.config.name,
- messageID: info.messageID,
- author: event.senderID,
- type: "simsimi"
- });
- }
- resolve();
- }, event.messageID);
- }
- );
- }
- } catch (err) {
- console.error(err);
- return api.sendMessage(` | Error in handleReply: ${err.message}`, event.threadID, event.messageID);
- }
-};
-
-module.exports.handleEvent = async function ({ api, event, Users }) {
- try {
- const raw = event.body ? event.body.toLowerCase().trim() : "";
- if (!raw) return;
- const senderName = await Users.getNameUser(event.senderID);
- const senderID = event.senderID;
-
- if (
- raw === "baby" || raw === "bot" || raw === "bby" ||
- raw === "jan" || raw === "xan" || raw === "জান" || raw === "বট" || raw === "বেবি"
- ) {
- const greetings = [
- "Bolo baby 💬", "হুম? বলো 😺", "হ্যাঁ জানু 😚", "শুনছি বেবি 😘", "এতো ডেকো না,প্রেম এ পরে যাবো তো🙈", "Boss বল boss😼", "আমাকে ডাকলে ,আমি কিন্তু কিস করে দিবো😘", "দূরে যা, তোর কোনো কাজ নাই, শুধু bot bot করিস  😉😋🤣", "jang hanga korba😒😬", "আমাকে না ডেকে আমার বস উল্লাস কে একটা জি এফ দাও-😽🫶🌺", "মাইয়া হলে চিপায় আসো 🙈😘", "-𝙂𝙖𝙮𝙚𝙨-🤗-যৌবনের কসম দিয়ে আমাকে 𝐁𝐥𝐚𝐜𝐤𝐦𝐚𝐢𝐥 করাছে-🥲🤦‍♂️🤧", "-আমার গল্পে তোমার নানি সেরা-🙊🙆‍♂️", "এত ডাকাডাকি না করে মুড়ির সাথে গাঞ্জা মিশাইয়া খাইয়া মরে যা", "—যে ছেড়ে গেছে-😔-তাকে ভুলে যাও-🙂-আমার বস উল্লাস এর সাথে  প্রেম করে তাকে দেখিয়ে দাও-🙈🐸", "সুন্দর মাইয়া মানেই-🥱আমার বস উল্লাস' এর বউ-😽🫶আর বাকি গুলো আমার বেয়াইন-🙈🐸", "-𝗜 𝗟𝗢𝗩𝗢 𝗬𝗢𝗨-😽-আহারে ভাবছো তোমারে প্রোপজ করছি-🥴-থাপ্পর দিয়া কিডনী লক করে দিব-😒-ভুল পড়া বের করে দিবো-🤭🐸", "-হুদাই গ্রুপে আছি-🥺🐸-কেও ইনবক্সে নক দিয়ে বলে না জান তোমারে আমি অনেক ভালোবাসি-🥺🤧", "আজ থেকে আর কাউকে পাত্তা দিমু না -!😏-কারণ আমি ফর্সা হওয়ার ক্রিম কিনছি -!🙂🐸", "তোগো গ্রুপের এড়মিন রাতে বিছানায় মুতে🤧🤓", "দূরে যা, তোর কোনো কাজ নাই, শুধু bot bot করিস  😉😋🤣", "অনুমতি দিলে 𝚈𝚘𝚞𝚃𝚞𝚋𝚎-এ কল দিতাম..!😒", "ওই কিরে গ্রুপে দেখি সব বুইড়া বুইড়া বেড়ি 🤦🏼🍼", "বন্ধুর সাথে ছেকা খাওয়া গান শুনতে শুনতে-🤧 -এখন আমিও বন্ধুর 𝙴𝚇 কে অনেক 𝙼𝙸𝚂𝚂 করি-🤕", " পুরুষকে সবচেয়ে বেশি কষ্ট দেয় তার শখের নারী...!🥺💔", "তোমার লগে দেখা হবে আবার - 😌 -কোনো এক অচেনা গলির চিপায়..!😛🤣", "•-কিরে🫵 তরা নাকি  prem করস..😐🐸•আমারে একটা করাই দিলে কি হয়-🥺", "-প্রিয়-🥺 -তোমাকে না পেলে আমি সত্যি-😪 -আরেকজন কে-😼 -পটাতে বাধ্য হবো-😑🤧", "তোর কি চোখে পড়ে না আমি বস উল্লাস এর সাথে ব্যাস্ত আসি😒", "মাইয়া হলে আমার বস উল্লাস কে Ummmmha দে 😒, এই নে বসের আইড়ি https://www.facebook.com/CYBER.ULLASH", "- শখের নারী  বিছানায় মু'তে..!🙃🥴", "বার বার Disturb করেছিস কোনো😾,আমার বস উল্লাস এর এর সাথে ব্যাস্ত আসি😋", "আমি গরীব এর সাথে কথা বলি না😼", "কিরে বলদ এত ডাকাডাকি করিস কেনো 🐸, তোরে কি শয়তানে লারে ??"
- ];
- const randomReply = greetings[Math.floor(Math.random() * greetings.length)];
-
- const mention = {
- body: `${randomReply} @${senderName}`,
- mentions: [{
- tag: `@${senderName}`,
- id: senderID
- }]
- };
-
- return api.sendMessage(mention, event.threadID, (err, info) => {
- if (!err) {
- global.client.handleReply.push({
- name: module.exports.config.name,
- messageID: info.messageID,
- author: event.senderID,
- type: "simsimi"
- });
- }
- }, event.messageID);
- }
-
- if (
- raw.startsWith("baby ") || raw.startsWith("bot ") || raw.startsWith("bby ") ||
- raw.startsWith("jan ") || raw.startsWith("xan ") ||
- raw.startsWith("জান ") || raw.startsWith("বট ") || raw.startsWith("বেবি ")
- ) {
- const query = raw
- .replace(/^baby\s+|^bot\s+|^bby\s+|^jan\s+|^xan\s+|^জান\s+|^বট\s+|^বেবি\s+/i, "")
- .trim();
- if (!query) return;
-
- const res = await axios.get(`${simsim}/simsimi?text=${encodeURIComponent(query)}&senderName=${encodeURIComponent(senderName)}`);
- const responses = Array.isArray(res.data.response) ? res.data.response : [res.data.response];
-
- for (const reply of responses) {
- await new Promise((resolve) => {
- api.sendMessage(reply, event.threadID, (err, info) => {
- if (!err) {
- global.client.handleReply.push({
- name: module.exports.config.name,
- messageID: info.messageID,
- author: event.senderID,
- type: "simsimi"
- });
- }
- resolve();
- }, event.messageID);
- });
- }
- }
- } catch (err) {
- console.error(err);
- return api.sendMessage(`| Error in handleEvent: ${err.message}`, event.threadID, event.messageID);
+ } catch {
+ api.sendMessage("❌ Error occurred while getting image.", event.threadID, event.messageID);
  }
 };
